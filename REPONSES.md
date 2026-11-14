@@ -32,10 +32,12 @@ est à la **ligne 48** du fichier d'origine : c'est la branche « heure pleine �
 du test qui échoue.
 
 **Q6.** Après correction et ajout des deux tests : `cours.ts` passe à **100 % de branches** et 100 %
-de lignes (mesure locale : 19 tests réussis sur 19). Les deux tests exécutent la branche « liste vide »
-(`filterCours([], …)`) et la combinaison recherche + niveau. Il reste 85,71 % de fonctions couvertes
-pour `cours.ts` : une fonction n'est pas appelée par les tests de ce module (à vérifier dans le rapport
-HTML `frontend/coverage/index.html`).
+de lignes (19 tests réussis sur 19, mesure confirmée dans Docker avec `docker compose run --rm unit`).
+Les deux tests exécutent la branche « liste vide » (`filterCours([], …)`) et la combinaison recherche +
+niveau. Il reste 85,71 % de fonctions couvertes (6 sur 7) : la fonction jamais appelée est le callback
+`(topic) => normalize(topic).includes(needle)` de la ligne 48, qui cherche dans les mots-clés. Dans tous
+les tests, le terme cherché est trouvé dans le titre, donc le `||` s'arrête avant d'examiner les
+mots-clés. Un test cherchant un mot présent seulement dans `topics` le couvrirait.
 
 **Q7.** La couverture de lignes indique quelles lignes ont été exécutées ; la couverture de branches
 indique quelles issues de chaque condition ont été testées (vrai et faux). Un code couvert à 100 % n'est
