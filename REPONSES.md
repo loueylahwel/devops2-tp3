@@ -2,78 +2,98 @@
 
 **Binôme :** NOM Prénom — NOM Prénom
 
-> Répondez sous chaque question. Les mesures (durées, pourcentages) sont celles de **votre** machine.
+> Brouillon. Les mesures ci-dessous viennent d'un lancement **local** (Node, sans Docker).
+> Les parties marquées **TODO** demandent Docker, SonarQube ou des captures d'écran sur votre machine.
 
 ## Partie 1 — Pyramide des tests
 
-**Q1.** Pour chacun des dossiers `tests/unit`, `tests/component`, `tests/integration` et `tests/e2e`, indiquez : le niveau de la pyramide, l'outil utilisé, et si la stack Docker doit tourner pour l'exécuter.
+**Q1.** `tests/unit` : tests unitaires, Vitest, pas de stack (fonctions pures de `lib/cours.ts`).
+`tests/component` : tests de composant, Vitest + Testing Library dans jsdom, pas de stack.
+`tests/integration` : tests d'intégration, Vitest, Strapi doit tourner (appels à l'API).
+`tests/e2e` : tests de bout en bout, Playwright dans un vrai navigateur, toute la stack doit tourner.
 
-**Q2.** Pourquoi la pyramide des tests est-elle large à la base et étroite au sommet ? Donnez au moins deux critères.
+**Q2.** La base est large parce que les tests unitaires sont rapides, peu coûteux et faciles à
+diagnostiquer. Le sommet est étroit parce que les tests E2E sont lents, fragiles et coûteux à
+maintenir ; on n'en écrit donc que pour les parcours critiques.
 
 ## Partie 2 — Tests unitaires
 
-**Q3.** Combien de tests sont exécutés et combien échouent ? Recopiez le message d'échec et expliquez ce que signifient `Expected` et `Received`.
+**Q3.** Avant correction : 9 tests dans `cours.test.ts`, 1 échoue. Message : `AssertionError: expected
+'1 h 0' to be '1 h'`, `Expected: "1 h"`, `Received: "1 h 0"`. `Expected` est la valeur attendue par le
+test, `Received` la valeur réellement renvoyée par la fonction.
 
-**Q4.** Quelle était la cause du bug dans `formatDuration` ? Expliquez pourquoi la correction fournie le résout.
+**Q4.** `formatDuration` affiche toujours les minutes après les heures : pour 60, `rest` vaut 0 et la
+fonction renvoie `1 h 0`. La correction ajoute une condition : si `rest === 0`, on n'affiche que
+`${hours} h`.
 
-**Q5.** Avant d'ajouter des tests : relevez la couverture (lignes, branches, fonctions) de `lib/cours.ts`. D'après le rapport HTML, quelles lignes ou branches ne sont pas couvertes ?
+**Q5.** Avant ajout des tests (commit de base, mesuré localement) : `lib/cours.ts` a 88,23 % des
+instructions, 75 % des branches, 85,71 % des fonctions et 93,33 % des lignes. La branche non couverte
+est à la **ligne 48** du fichier d'origine : c'est la branche « heure pleine » de `formatDuration`, celle
+du test qui échoue.
 
-**Q6.** Après l'ajout des deux tests fournis : quelle est la nouvelle couverture de `lib/cours.ts` ? Quelles lignes ou branches ces tests exécutent-ils qui ne l'étaient pas ? Reste-t-il quelque chose de non couvert, et pourquoi ?
+**Q6.** Après correction et ajout des deux tests : `cours.ts` passe à **100 % de branches** et 100 %
+de lignes (mesure locale : 19 tests réussis sur 19). Les deux tests exécutent la branche « liste vide »
+(`filterCours([], …)`) et la combinaison recherche + niveau. Il reste 85,71 % de fonctions couvertes
+pour `cours.ts` : une fonction n'est pas appelée par les tests de ce module (à vérifier dans le rapport
+HTML `frontend/coverage/index.html`).
 
-**Q7.** Quelle différence entre couverture de lignes et couverture de branches ? Un code couvert à 100 % est-il forcément sans bug ? Justifiez avec un exemple tiré de ce TP.
+**Q7.** La couverture de lignes indique quelles lignes ont été exécutées ; la couverture de branches
+indique quelles issues de chaque condition ont été testées (vrai et faux). Un code couvert à 100 % n'est
+pas forcément sans bug : on peut exécuter une ligne sans vérifier le résultat. Exemple du TP : avant
+correction, la ligne `return \`${hours} h ${rest}\`` était exécutée par le test à 90 minutes, donc
+« couverte », alors que le cas `60` était faux.
 
 ## Partie 3 — Tests de composant
 
-**Q8.** Que vérifie `CoursCard.test.tsx` qu'un test unitaire de `formatDuration` ne vérifie pas ? Quel outil simule le navigateur, et dans quel fichier est-il configuré ?
+**Q8.** TODO — à compléter après lecture de `tests/component/CoursCard.test.tsx`. Outil : Testing Library
+dans jsdom (environnement configuré dans `vitest.config.mts`).
 
-**Q9.** Pourquoi les tests recherchent-ils les éléments par rôle ou par texte (`getByRole`, `getByText`) plutôt que par classe CSS ?
+**Q9.** TODO. Réponse attendue : `getByRole` et `getByText` testent ce que voit et lit l'utilisateur ; une
+classe CSS est un détail d'implémentation qui change sans que le comportement change.
 
-**Q10.** Pourquoi n'y a-t-il pas de test de composant pour `app/page.tsx` ? Quel niveau de test le couvre ?
+**Q10.** TODO. Réponse attendue : `app/page.tsx` est un composant serveur qui appelle Strapi ; il est
+couvert par les tests d'intégration et E2E.
 
 ## Partie 4 — Tests d'intégration
 
-**Q11.** Que vérifient les tests d'intégration qui n'est vérifié par aucun test unitaire ou de composant ?
+**Q11.** Les tests d'intégration vérifient le contrat entre le front et l'API Strapi réelle (format de
+réponse, appels HTTP), ce qu'aucun test unitaire ou de composant ne fait puisqu'ils n'appellent pas
+Strapi.
 
-**Q12.** Strapi arrêté : quel résultat et quel message obtenez-vous ? Pourquoi les tests unitaires passent-ils toujours ? À quoi sert `--no-deps` ?
+**Q12.** Strapi arrêté (mesuré localement) : les 4 tests d'intégration échouent avec
+`ECONNREFUSED 127.0.0.1:1337` et `::1:1337`. Les tests unitaires passent toujours parce qu'ils n'ont
+pas besoin du réseau. `--no-deps` empêche `docker compose run` de redémarrer les services déclarés dans
+`depends_on` (ici Strapi et PostgreSQL).
 
-**Q13.** Un test d'intégration en échec signale-t-il forcément un bug dans le code ? Citez deux autres causes possibles.
+**Q13.** Non. Autres causes possibles : Strapi non démarré ou pas encore prêt, permissions du rôle Public
+non accordées, données de seed absentes ou différentes, variable `STRAPI_URL` mal configurée.
 
 ## Partie 5 — Tests de bout en bout
 
-**Q14.** Quel scénario échoue ? Que montrent la capture d'écran et la trace ? Quel lien avec la question Q3 ? Pourquoi échoue-t-il alors que vous avez déjà corrigé le bug en partie 2 ?
+**Q14.** TODO — à compléter après `docker compose run --rm e2e` (Docker requis). Le test attendu échoue
+parce que le conteneur `frontend` a été construit avant la correction de `formatDuration`.
 
-**Q15.** Le même bug est détecté par un test unitaire et par un test E2E. Lequel permet de trouver la cause le plus vite ? Lequel prouve que l'utilisateur est touché ?
+**Q15.** TODO. Réponse attendue : le test unitaire trouve la cause (la fonction et la ligne) le plus
+vite ; le test E2E prouve que l'utilisateur voit le bug.
 
-**Q16.** Complétez le tableau avec vos mesures :
+**Q16.** TODO pour la durée E2E. Mesures locales des tests unitaires et de composant :
 
 | Niveau | Nombre de tests | Durée d'exécution | Besoin de la stack ? |
 |---|---|---|---|
-| Unitaire + composant | | | |
-| Intégration | | | |
-| E2E | | | |
+| Unitaire + composant | 19 (après correction) | ~2,6 s (Vitest) | Non |
+| Intégration | 4 (échouent sans Strapi) | ~0,4 s (échec immédiat) | Oui (Strapi) |
+| E2E | TODO | TODO | Oui (toute la stack) |
 
-**Q17.** Qu'est-ce qu'un test « flaky » (instable) ? Quels mécanismes de Playwright utilisés ici (attente automatique, assertions `expect(...).toHaveCount`, etc.) réduisent ce risque ?
+**Q17.** TODO. Un test « flaky » réussit ou échoue de façon aléatoire. Playwright réduit ce risque avec
+l'attente automatique des éléments et les assertions `expect(...)` qui réessaient jusqu'au délai.
 
 ## Partie 6 — SonarQube
 
-**Q18.** Collez votre `sonar-project.properties` complété et expliquez chaque valeur ajoutée. Pourquoi exclut-on `app/**` et `lib/api.ts` du calcul de couverture ?
+**Q18.** TODO — à compléter avec votre `sonar-project.properties`.
 
-**Q19.** Analyse avec le Quality Gate TP3 : statut du gate et conditions en échec ; nombre de bugs, vulnérabilités, security hotspots et code smells ; couverture ; taux de duplication.
+**Q19–Q27.** TODO : résultats du Quality Gate et du tableau de bord SonarQube (Docker requis).
 
-**Q20.** Expliquez la différence entre bug, vulnérabilité, security hotspot et code smell, avec un exemple tiré de votre rapport quand il en existe.
+## Captures à faire sur votre machine
 
-**Q21.** Ouvrez la vulnérabilité : quelle règle est en cause et quel est le risque ? Expliquez la correction fournie : d'où vient maintenant le mot de passe, et par quel chemin arrive-t-il jusqu'au code ? Pourquoi un secret dans le code est-il dangereux, même dans un dépôt privé ?
-
-**Q22.** Quels code smells la correction fournie de `CoursList.tsx` fait-elle disparaître ? Pour chacun : règle, sévérité, explication, et ce qui, dans le nouveau code, règle le problème.
-
-**Q23.** Où se trouve le code dupliqué ? Comment le supprimer ? (Ne le faites pas, décrivez seulement.)
-
-**Q24.** Qu'est-ce que la dette technique dans SonarQube et comment est-elle exprimée ? Valeur avant et après vos corrections.
-
-**Q25.** Que signifie « New Code » dans SonarQube ? Quelles conditions du gate TP3 portent sur le nouveau code ? Pourquoi SonarQube recommande-t-il de juger le nouveau code plutôt que le code global ?
-
-**Q26.** Avec `sonar.qualitygate.wait=true`, que fait le scanner quand le Quality Gate est rouge ? Pourquoi est-ce utile dans un pipeline CI ?
-
-## Partie 7 — Synthèse
-
-**Q27.** Proposez l'ordre des étapes d'un pipeline CI pour ce projet (build, tests unitaires, intégration, E2E, analyse Sonar…) et justifiez-le. Quelles étapes doivent bloquer le merge d'une pull request ?
+`captures/couverture.png`, `captures/playwright-echec.png`, `captures/sonar-rouge.png`,
+`captures/sonar-vert.png`.
