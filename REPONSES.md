@@ -1,6 +1,6 @@
 # TP3 — Réponses
 
-**Binôme :** NOM Prénom — NOM Prénom
+**Binôme :** Louey Lahwel (travail réalisé seul)
 
 > Mesures relevées en exécutant la stack et les tests dans Docker (sauf Q5, mesurée avec Node en
 > local sur le commit de départ). Captures dans `captures/`.
